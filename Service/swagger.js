@@ -7,20 +7,11 @@ const doc = {
     title: 'KUSHOP API',
     description: 'KUSHOP Project from Kasetsart University Sriracha Campus.',
     version: '1.0.0',
+    
   },
   // host: 'localhost:3000',
   schemes: ['http'],
-  tags: [
-    {
-      name: 'products',
-    },
-    {
-      name: 'members',
-    },
-    {
-      name: 'carts',
-    },
-  ],
+  
 };
 
 const outputFile = './swagger_output.json';

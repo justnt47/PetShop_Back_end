@@ -11,6 +11,7 @@ import yaml from "yaml"
 import fs from "fs"
 import { createRequire } from 'module';
 
+import memberRoute from './Routes/memberRoute.js';
 
 // const require = createRequire(import.meta.url);
 dotenv.config();
@@ -30,6 +31,7 @@ app.use(cors(
 // front เรียกผ่าน "img_pd" ที่ /img_pd
 app.use(`/img_pd`,express.static('img_pd'));
 app.use(`/img_mem`,express.static('img_mem'));
+app.use(memberRoute);
 
 // const swaggerDocument = require('./Service/swagger-output.json', { assert: { type: 'json' } });
 
