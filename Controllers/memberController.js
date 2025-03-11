@@ -23,7 +23,8 @@ export async function addMember(req, res) {
         ]);
         if (resultCheck.rows[0].exists) {
             return res.json({
-                message: `Conflict - memEmail ${req.body.Email} already exists`
+                message: `Conflict - memEmail ${req.body.Email} already exists`,
+                regist:false,
             });
         }
         
@@ -42,7 +43,9 @@ export async function addMember(req, res) {
         return res.status(201).json(bodyData);
     } catch (error) {
         res.json({
-            message: error
+            message: error,
+            regist:false,
+
         });
     }  
 };
@@ -67,6 +70,7 @@ export async function loginMember(req, res) {
         ]);
         if (!resultCheck.rows[0].exists) {
             return res.json({
+                message:"อีเมลหรือรหัสผ่านไม่ถูกต้อง",
                 login:false});
         }
         const query = 'SELECT * FROM member_role_view WHERE "memEmail" = $1';
@@ -84,6 +88,8 @@ export async function loginMember(req, res) {
             fName: result.rows[0].memfName,
             lName: result.rows[0].memlName,
             roleId: result.rows[0].roleId,
+            roleTH: result.rows[0].roleTHName,
+            roleEN: result.rows[0].roleENName,
         };   
         console.log('theuser →' ,theuser);
         const secret_key = process.env.SECRET_KEY;
@@ -98,7 +104,8 @@ export async function loginMember(req, res) {
             sameSite: 'None',
         });
         return res.json({
-            login:true});
+            login:true,
+            token: token});
         }
         else{
             res.clearCookie('token', {
