@@ -14,6 +14,7 @@ export async function addMember(req, res) {
             });
             
         }
+        const userName = req.body.Email.split('@')[0];
         const pwd = req.body.password;
         const salt = 11;
         const pwdHash = await bcrypt.hash(pwd, salt);
@@ -29,9 +30,10 @@ export async function addMember(req, res) {
         }
         
         // NOTE: insert data to the database using parameterize, WARNING: concatenate string is not safe
-        const query = 'INSERT INTO public.members( "memEmail", "memfName", "memlName",  "memHash","roleId") VALUES($1,$2,$3,$4,$5)';
+        const query = 'INSERT INTO public.members( "memEmail", "userName","memfName", "memlName",  "memHash","roleId") VALUES($1,$2,$3,$4,$5,$6) ';
         const result = await db.query(query,[
             req.body.Email,
+            userName,
             req.body.fName, 
             req.body.lName, 
             pwdHash, 
@@ -40,7 +42,7 @@ export async function addMember(req, res) {
         ]);
         
 
-        return res.status(201).json(bodyData);
+        return res.status(201).json({regist:true});
     } catch (error) {
         res.json({
             message: error,
@@ -120,7 +122,39 @@ export async function loginMember(req, res) {
         //     error: error.message
         // });
         return res.json({
+            message:"อีเมลหรือรหัสผ่านไม่ถูกต้อง",
             login:false})
         }
       
 };
+
+export async function logoutMember(req, res) {
+        console.log('POST /logoutMember Requested');   
+    try {
+            res.clearCookie('token', {
+                secure:true,
+                sameSite: 'None',
+            });
+            
+        return res.json({
+            login:false});
+    } catch (error) {
+        // res.status(500).json({
+        //     error: error.message
+        // });
+        return res.json({
+            error:error})
+        }
+      
+};
+
+export async function uploadMember(req, res) {
+    console.log("Upload Member Image")
+     upload(req, res, (err) => {
+         if (err) {
+             return res.status(400).json({ message: err.message });
+         }
+         res.status(200).json({ message: 'File uploaded successfully!' });
+     });
+ }
+ 
