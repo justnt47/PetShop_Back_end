@@ -89,6 +89,7 @@ export async function loginMember(req, res) {
             Email: result.rows[0].memEmail,
             fName: result.rows[0].memfName,
             lName: result.rows[0].memlName,
+            password: result.rows[0].memHash,
             roleId: result.rows[0].roleId,
             roleTH: result.rows[0].roleTHName,
             roleEN: result.rows[0].roleENName,
@@ -147,6 +148,106 @@ export async function logoutMember(req, res) {
         }
       
 };
+export async function updateUser(req, res) {
+    console.log('POST /updateUser Requested');
+    const bodyData = req.body;
+    try {
+        
+        if ( req.body.email == null || req.body.fName == null || req.body.lName == null || req.body.email == '' || req.body.fName == '' || req.body.lName == ''){
+            return res.status(422).json({
+                error: 'Bad Request - memEmail, fName and lName are required'
+            });
+        }
+        const queryCheck = 'SELECT EXISTS(SELECT * FROM public.members WHERE "memEmail" = $1)';
+        const resultCheck = await db.query(queryCheck,[
+            req.body.email
+        ]);
+        if (!resultCheck.rows[0].exists) {
+            return res.json({
+                message: `Conflict - memEmail ${req.body.email} not exists`,
+
+            });
+        }
+        const query = 'UPDATE public.members SET "memfName" = $1, "memlName" = $2 WHERE "memEmail" = $3';
+        const result = await db.query(query,[
+            req.body.fName, 
+            req.body.lName, 
+            req.body.email
+        ]);
+        return res.status(200).json({});
+    } catch (error) {
+        res.json({
+            message: error,
+
+        });
+    }  
+}
+
+export async function updatePassword(req, res) {
+    console.log('POST /updatePassword Requested');
+    const bodyData = req.body;
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader.split(' ')[1];
+        console.log(bodyData);
+        console.log(token);
+        if (!token) {
+            return res.status(401).json({
+                error: 'Unauthorized - No token provided'
+            });
+        }
+
+        const secret_key = process.env.SECRET_KEY;
+        console.log(secret_key);
+        let decoded;
+        try {
+            console.log(`decoded`);
+            decoded = jwt.verify(token, secret_key);
+            console.log(decoded);
+        } catch (err) {
+            return res.status(401).json({
+                error: 'Unauthorized - Invalid token'
+            });
+        }
+        if ( req.body.password == null || req.body.password == ''){
+            return res.status(422).json({
+                error: 'Bad Request - password are required'
+            });
+        }
+        const queryCheck = 'SELECT EXISTS(SELECT * FROM public.members WHERE "memEmail" = $1)';
+        console.log(queryCheck  );
+        const resultCheck = await db.query(queryCheck,[
+            decoded.Email
+        ]);
+        console.log(resultCheck);
+        if (!resultCheck.rows[0].exists) {
+            return res.json({
+                message: `Conflict - memEmail ${decoded.Email} not exists`,
+
+            });
+        }
+        const pwd = req.body.password;
+        const salt = 11;
+        const pwdHash = await bcrypt.hash(pwd, salt);
+        console.log(pwdHash);
+        const query = 'UPDATE public.members SET "memHash" = $1 WHERE "memEmail" = $2';
+        const result = await db.query(query,[
+            pwdHash, 
+            decoded.Email
+        ]);
+        console.log(result);
+        return res.status(200).json({
+            status: 200,
+            message: 'Password updated successfully'
+        });
+    } catch (error) {
+        res.json({
+
+            message: error,
+
+        });
+    }  
+}
 
 export async function uploadMember(req, res) {
     console.log("Upload Member Image")
