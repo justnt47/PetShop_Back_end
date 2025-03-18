@@ -86,6 +86,7 @@ export async function loginMember(req, res) {
 
         if(loginok){
         const theuser = {
+            userId: result.rows[0].userId,
             Email: result.rows[0].memEmail,
             fName: result.rows[0].memfName,
             lName: result.rows[0].memlName,

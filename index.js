@@ -11,7 +11,10 @@ import yaml from "yaml"
 import fs from "fs"
 import { createRequire } from 'module';
 
+import productRoute from './Routes/productRoute.js';
 import memberRoute from './Routes/memberRoute.js';
+import cartRoute from './Routes/cartRoute.js';
+import masterDataRoute from './Routes/masterDataRoute.js';
 
 // const require = createRequire(import.meta.url);
 dotenv.config();
@@ -31,7 +34,10 @@ app.use(cors(
 // front เรียกผ่าน "img_pd" ที่ /img_pd
 app.use(`/img_pd`,express.static('img_pd'));
 app.use(`/img_mem`,express.static('img_mem'));
+app.use(productRoute);
 app.use(memberRoute);
+app.use(cartRoute);
+app.use(masterDataRoute);
 
 // const swaggerDocument = require('./Service/swagger-output.json', { assert: { type: 'json' } });
 
