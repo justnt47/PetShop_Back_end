@@ -4,6 +4,39 @@ import jwt from 'jsonwebtoken';
 
 
 
+export async function getProduct(req,res){
+    console.log('GET /getProduct Requested');
+    try {
+        let query = `SELECT p.*,pt.product_type_name FROM products p
+                    LEFT JOIN product_types pt ON p."product_type_id" = pt."product_type_id"`;
+        const conditions = [];
+        const params = [];
+        // console.log(req.body);
+        if (req.body.product_name && req.body.product_name.trim() !== '') {
+            conditions.push(`p."product_name" ILIKE $${params.length + 1}`);
+            params.push(`%${req.body.product_name}%`);
+        }
+
+        if (req.body.product_type_id && req.body.product_type_id.trim() !== '') {
+        conditions.push(`p."product_type_id" = $${params.length + 1}`);
+        params.push(`%${req.body.product_type_id}%`);
+        }
+
+        if (conditions.length > 0) {
+        query += ` WHERE ` + conditions.join(" AND ");
+        }
+
+        // console.log(query);
+        // console.log(params);
+        const result = await db.query(query, params);
+        return res.status(200).json(result.rows);
+    }
+    catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
 export async function addProduct(req,res){
     console.log('POST /addProduct Requested');
     const bodyData = req.body;

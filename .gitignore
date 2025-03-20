@@ -400,3 +400,4 @@ FodyWeavers.xsd
 *.sln.iml
 package-lock.json
 .env
+swagger_output.json

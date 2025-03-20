@@ -7,5 +7,6 @@ import * as pd from '../Controllers/productController.js';
 const router = express.Router();
 
 
+router.post('/getProducts', pd.getProduct);
 router.post('/addProducts', pd.addProduct);
 export default router;
