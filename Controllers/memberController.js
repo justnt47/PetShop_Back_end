@@ -153,29 +153,94 @@ export async function updateUser(req, res) {
     console.log('POST /updateUser Requested');
     const bodyData = req.body;
     try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader.split(' ')[1];
         
-        if ( req.body.email == null || req.body.fName == null || req.body.lName == null || req.body.email == '' || req.body.fName == '' || req.body.lName == ''){
-            return res.status(422).json({
-                error: 'Bad Request - memEmail, fName and lName are required'
+        if (!token) {
+            return res.status(401).json({
+                message: 'Unauthorized - No token provided'
             });
         }
-        const queryCheck = 'SELECT EXISTS(SELECT * FROM public.members WHERE "memEmail" = $1)';
-        const resultCheck = await db.query(queryCheck,[
-            req.body.email
+        const secret_key = process.env.SECRET_KEY;
+        console.log(secret_key);
+        let decoded;
+        try {
+            console.log(`decoded`);
+            decoded = jwt.verify(token, secret_key);
+            console.log(decoded);
+        } catch (err) {
+            return res.status(401).json({
+                message: 'Unauthorized - Invalid token'
+            });
+        }
+        if ( req.body.email == null || req.body.fName == null || req.body.lName == null || req.body.email == '' || req.body.fName == '' || req.body.lName == ''){
+            return res.status(422).json({
+                message: 'Bad Request - Email, Name and Surname are required'
+            });
+        }
+        console.log(`Check Exist`);
+        console.log(decoded);
+        let queryCheck = 'SELECT EXISTS(SELECT * FROM public.members WHERE "id" = $1)';
+        let resultCheck = await db.query(queryCheck,[
+            decoded.userId
         ]);
+        console.log(`resultCheck`,resultCheck);
         if (!resultCheck.rows[0].exists) {
             return res.json({
-                message: `Conflict - memEmail ${req.body.email} not exists`,
+                message: `Conflict - User not exists `,
 
             });
         }
+
+        console.log(`Check Email`);
+        queryCheck = 'SELECT EXISTS(SELECT * FROM public.members WHERE "memEmail" = $1)';
+        resultCheck = await db.query(queryCheck,[
+            req.body.email
+        ]);
+        if (resultCheck.rows[0].exists && req.body.email != decoded.Email) {
+            return res.json({
+                message: `Conflict - Email ${req.body.email} already exists`,
+
+            });
+        }
+        console.log(`Update`);
         const query = 'UPDATE public.members SET "memfName" = $1, "memlName" = $2 WHERE "memEmail" = $3';
         const result = await db.query(query,[
             req.body.fName, 
             req.body.lName, 
             req.body.email
         ]);
-        return res.status(200).json({});
+
+        console.log(`Select`);
+        const getDataQuery = 'SELECT * FROM member_role_view WHERE "userId" = $1';
+        const getDataResult = await db.query(getDataQuery,
+        [
+            decoded.userId
+        ]);
+
+        const theuser = {
+            userId: getDataResult.rows[0].userId,
+            Email: getDataResult.rows[0].memEmail,
+            fName: getDataResult.rows[0].memfName,
+            lName: getDataResult.rows[0].memlName,
+            password: getDataResult.rows[0].memHash,
+            roleId: getDataResult.rows[0].roleId,
+            roleTH: getDataResult.rows[0].roleTHName,
+            roleEN: getDataResult.rows[0].roleENName,
+        };
+        
+        const newToken = jwt.sign(theuser, secret_key);
+        res.cookie('token', newToken, {
+            // ms * sec * min * hour * day
+            maxAge: 1000 * 60 * 60, // 1 hour
+            secure:true,
+            sameSite: 'None',
+        });
+        return res.status(200).json({
+            status: 200,
+            message: 'User updated successfully'
+        });
+       
     } catch (error) {
         res.json({
             message: error,
