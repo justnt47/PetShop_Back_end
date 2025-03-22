@@ -20,17 +20,18 @@ import masterDataRoute from './Routes/masterDataRoute.js';
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
-
+app.use(express.json({ limit: '5mb' })); // ตั้งค่าขนาด request body สูงสุด 5MB
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 app.use(bodyParser.json());
 
 // cors เรียกใช้งานก่อนทุกคำสั่ง
 app.use(cors(
-  {
-    origin: ['http://localhost:5173','http://localhost:3000','http://127.0.0.1:5173','http://127.0.0.1:3000'], // อนุญาตให้เว็บไซต์นี้เรียกใช้งาน API
-    methods: ['GET','POST','PUT','DELETE'], // อนุญาตให้ใช้งาน method ไหนบ้าง
-    credentials: true // อนุญาตให้ส่ง cookie ไปที่เซิฟเวอร์
-  }
-)); // อนุญาตให้ดึงข้อมูลจาก server อื่นได้ "ใน mode development เท่านั้น"
+    {
+      origin: ['http://localhost:5173','http://localhost:3000','http://127.0.0.1:5173','http://127.0.0.1:3000'], // อนุญาตให้เว็บไซต์นี้เรียกใช้งาน API
+      methods: ['GET','POST','PUT','DELETE'], // อนุญาตให้ใช้งาน method ไหนบ้าง
+      credentials: true // อนุญาตให้ส่ง cookie ไปที่เซิฟเวอร์
+    }
+  )); // อนุญาตให้ดึงข้อมูลจาก server อื่นได้ "ใน mode development เท่านั้น"
 // front เรียกผ่าน "img_pd" ที่ /img_pd
 app.use(`/img_pd`,express.static('img_pd'));
 app.use(`/img_mem`,express.static('img_mem'));

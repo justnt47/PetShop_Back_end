@@ -6,7 +6,7 @@ export async function getProductType(req, res) {
      try {
         const sqlQuery = 'SELECT * FROM public."product_types"';
         const result = await db.query(sqlQuery);
-        console.log(result.rows);
+        // console.log(result.rows);
         return res.json(result.rows);
      } catch (error) {
         console.log(error);

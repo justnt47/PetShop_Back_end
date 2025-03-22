@@ -95,11 +95,8 @@ export async function loginMember(req, res) {
             roleTH: result.rows[0].roleTHName,
             roleEN: result.rows[0].roleENName,
         };   
-        console.log('theuser →' ,theuser);
         const secret_key = process.env.SECRET_KEY;
-        console.log('secret_key →' ,secret_key);
         const token = jwt.sign(theuser, secret_key);
-        console.log('token →' ,token);
  
         res.cookie('token', token, {
             // ms * sec * min * hour * day
@@ -162,12 +159,10 @@ export async function updateUser(req, res) {
             });
         }
         const secret_key = process.env.SECRET_KEY;
-        console.log(secret_key);
         let decoded;
         try {
-            console.log(`decoded`);
             decoded = jwt.verify(token, secret_key);
-            console.log(decoded);
+          
         } catch (err) {
             return res.status(401).json({
                 message: 'Unauthorized - Invalid token'
@@ -178,13 +173,11 @@ export async function updateUser(req, res) {
                 message: 'Bad Request - Email, Name and Surname are required'
             });
         }
-        console.log(`Check Exist`);
-        console.log(decoded);
+        
         let queryCheck = 'SELECT EXISTS(SELECT * FROM public.members WHERE "id" = $1)';
         let resultCheck = await db.query(queryCheck,[
             decoded.userId
         ]);
-        console.log(`resultCheck`,resultCheck);
         if (!resultCheck.rows[0].exists) {
             return res.json({
                 message: `Conflict - User not exists `,
@@ -192,7 +185,6 @@ export async function updateUser(req, res) {
             });
         }
 
-        console.log(`Check Email`);
         queryCheck = 'SELECT EXISTS(SELECT * FROM public.members WHERE "memEmail" = $1)';
         resultCheck = await db.query(queryCheck,[
             req.body.email
