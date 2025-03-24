@@ -182,6 +182,7 @@ export async function getCartByCus(req, res) {
         error: "Unauthorized - No token provided",
       });
     }
+
     const secret_key = process.env.SECRET_KEY;
     console.log(secret_key);
     let decoded;
@@ -247,19 +248,27 @@ export async function getCartByCus(req, res) {
         };
       });
 
-      cartList[cartId] = {
-        qty: resultCartSum.rows[0].qty,
-        total: resultCartSum.rows[0].money,
-        productList: productList,
-      };
+      // ตรวจสอบว่ามีสินค้าในตะกร้าหรือไม่
+      if (resultCartSum.rows.length > 0 && resultCartItems.rows.length > 0) {
+        cartList[cartId] = {
+          qty: resultCartSum.rows[0].qty,
+          total: resultCartSum.rows[0].money,
+          productList: productList,
+        };
+      } else {
+        // หากตะกร้าว่างเปล่า
+        cartList[cartId] = {
+          qty: 0,
+          total: 0,
+          productList: {},
+        };
+      }
     }
 
     // ส่งผลลัพธ์กลับ
     return res.json({
       status: 200,
       data: {
-        id: userData.id,
-        email: userData.memEmail,
         cartList: cartList,
       },
     });
@@ -356,13 +365,250 @@ export async function getCartHistoryByCus(req, res) {
     return res.json({
       status: 200,
       data: {
-        id: userData.id,
-        email: userData.memEmail,
+        // id: userData.id,
+        // email: userData.memEmail,
         cartList: cartList,
       },
     });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+export async function updateCartItemQty(req, res) {
+  console.log(`POST Update Cart Item Qty is Requested`);
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized - No token provided",
+      });
+    }
+    const secret_key = process.env.SECRET_KEY;
+    console.log(secret_key);
+    let decoded;
+    try {
+      console.log(`decoded`);
+      decoded = jwt.verify(token, secret_key);
+      console.log(decoded);
+    } catch (err) {
+      return res.status(401).json({
+        error: "Unauthorized - Invalid token",
+      });
+    }
+
+    const queryCheckCart = `SELECT * FROM carts WHERE "cart_id" = $1 AND "userId" = $2 AND "is_succ" != true`;
+    const resultCheckCart = await db.query(queryCheckCart, [
+      req.body.cart_id,
+      decoded.userId,
+    ]);
+
+    if (resultCheckCart.rows.length === 0) {
+      return res.status(400).json({ error: "Cart or items not found" });
+    }
+
+    const queryUpdateQty = `UPDATE "cart_items" ci
+                            SET "quantity" = $1
+                            FROM "carts" ct
+                            WHERE ci."cart_id" = ct."cart_id"
+                              AND ci."cart_id" = $2
+                              AND ci."product_id" = $3
+                              AND ct."userId" = $4
+                              AND ct."is_succ" != true;
+                            `;
+    const resultUpdateQty = await db.query(queryUpdateQty, [
+      req.body.qty,
+      req.body.cart_id,
+      req.body.product_id,
+      decoded.userId,
+    ]);
+
+    return res.json({ status: 200 });
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      error: error.message,
+    });
+  }
+}
+export async function delCartItem(req, res) {
+  console.log(`POST Delete Cart Item Qty is Requested`);
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized - No token provided",
+      });
+    }
+    const secret_key = process.env.SECRET_KEY;
+    console.log(secret_key);
+    let decoded;
+    try {
+      console.log(`decoded`);
+      decoded = jwt.verify(token, secret_key);
+      console.log(decoded);
+    } catch (err) {
+      return res.status(401).json({
+        error: "Unauthorized - Invalid token",
+      });
+    }
+
+    const queryCheckCart = `SELECT * FROM carts WHERE "cart_id" = $1 AND "userId" = $2 AND "is_succ" != true`;
+    const resultCheckCart = await db.query(queryCheckCart, [
+      req.body.cart_id,
+      decoded.userId,
+    ]);
+
+    if (resultCheckCart.rows.length === 0) {
+      return res.status(400).json({ error: "Cart or items not found" });
+    }
+
+    const queryDelItem = `DELETE FROM "cart_items" ci
+                          USING "carts" ct
+                          WHERE ci."cart_id" = ct."cart_id"
+                            AND ci."cart_id" = $1
+                            AND ci."product_id" = $2
+                            AND ct."userId" = $3
+                            AND ct."is_succ" != true;`;
+    const resultDelItem = await db.query(queryDelItem, [
+      req.body.cart_id,
+      req.body.product_id,
+      decoded.userId,
+    ]);
+
+    return res.json({ status: 200 });
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      error: error.message,
+    });
+  }
+}
+
+export async function delCart(req, res) {
+  console.log(`POST Delete Cart is Requested`);
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized - No token provided",
+      });
+    }
+    const secret_key = process.env.SECRET_KEY;
+    console.log(secret_key);
+    let decoded;
+    try {
+      console.log(`decoded`);
+      decoded = jwt.verify(token, secret_key);
+      console.log(decoded);
+    } catch (err) {
+      return res.status(401).json({
+        error: "Unauthorized - Invalid token",
+      });
+    }
+
+    const queryCheckCart = `SELECT * FROM carts WHERE "cart_id" = $1 AND "userId" = $2 AND "is_succ" != true`;
+    const resultCheckCart = await db.query(queryCheckCart, [
+      req.body.cart_id,
+      decoded.userId,
+    ]);
+
+    if (resultCheckCart.rows.length === 0) {
+      return res.status(400).json({ error: "Cart or items not found" });
+    }
+
+    const queryDelCart = `DELETE FROM carts WHERE "cart_id" = $1 AND "userId" = $2 AND "is_succ" != true`;
+    const resultDelCart = await db.query(queryDelCart, [
+      req.body.cart_id,
+      decoded.userId,
+    ]);
+
+    return res.json({ status: 200 });
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      error: error.message,
+    });
+  }
+}
+
+export async function confirmCart(req, res) {
+  console.log(`POST Confirm Cart is Requested`);
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized - No token provided",
+      });
+    }
+
+    const secret_key = process.env.SECRET_KEY;
+    console.log(secret_key);
+    let decoded;
+    try {
+      console.log(`decoded`);
+      decoded = jwt.verify(token, secret_key);
+      console.log(decoded);
+    } catch (err) {
+      return res.status(401).json({
+        error: "Unauthorized - Invalid token",
+      });
+    }
+
+    // ตรวจสอบว่าตะกร้ามีอยู่และยังไม่สมบูรณ์
+    const queryCheckCart = `SELECT * FROM carts WHERE "cart_id" = $1 AND "userId" = $2 AND "is_succ" != true`;
+    const resultCheckCart = await db.query(queryCheckCart, [
+      req.body.cart_id,
+      decoded.userId,
+    ]);
+
+    if (resultCheckCart.rows.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Cart not found or already confirmed" });
+    }
+
+    // ตรวจสอบว่าตะกร้ามีสินค้าหรือไม่
+    const queryCheckCartItems = `SELECT * FROM cart_items WHERE "cart_id" = $1`;
+    const resultCheckCartItems = await db.query(queryCheckCartItems, [
+      req.body.cart_id,
+    ]);
+
+    if (resultCheckCartItems.rows.length === 0) {
+      return res.status(400).json({ error: "Cart is empty" });
+    }
+
+    // อัปเดทสถานะตะกร้าเป็น "สำเร็จ"
+    const queryConfirmCart = `UPDATE carts SET "is_succ" = $1 WHERE "cart_id" = $2 AND "userId" = $3 AND "is_succ" != true`;
+    const resultConfirmCart = await db.query(queryConfirmCart, [
+      true,
+      req.body.cart_id,
+      decoded.userId,
+    ]);
+
+    if (resultConfirmCart.rowCount === 0) {
+      return res.status(400).json({ error: "Failed to confirm cart" });
+    }
+
+    return res.json({
+      status: 200,
+      message: "Cart confirmed successfully",
+      cart_id: req.body.cart_id,
+    });
+  } catch (error) {
+    console.error("Error confirming cart:", error);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: error.message,
+    });
   }
 }

@@ -13,4 +13,12 @@ router.post("/carts/getcartbycus", cart.getCartByCus);
 
 router.post("/carts/getcarthistorybycus", cart.getCartHistoryByCus);
 
+router.post("/carts/updateCartItemQty", cart.updateCartItemQty);
+
+router.post("/carts/delCartItem", cart.delCartItem);
+
+router.post("/carts/delCart", cart.delCart);
+
+router.post("/carts/confirmCart", cart.confirmCart);
+
 export default router;
