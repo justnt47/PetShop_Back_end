@@ -71,25 +71,45 @@ export async function addCart(req, res) {
     const month = String(now.getMonth() + 1).padStart(2, "0"); // เดือนเริ่มจาก 0 ดังนั้นต้องบวก 1
     const day = String(now.getDate()).padStart(2, "0");
     const currentDate = `${year}${month}${day}`;
-    const queryGenId = `SELECT CONCAT(TO_CHAR(NOW(), 'YYYYMMDD'), '-', LPAD(COALESCE(MAX(SUBSTRING(cart_id, 10)), '1')::text, 4, '0'))
-                          FROM carts 
-                          WHERE cart_id LIKE CONCAT(TO_CHAR(NOW(), 'YYYYMMDD'), '-%')`;
+    const queryGenId = `SELECT CONCAT(
+                        TO_CHAR(NOW(), 'YYYYMMDD'), 
+                        '-', 
+                        LPAD(
+                          COALESCE(MAX(CAST(SUBSTRING(cart_id, 10) AS INT)) + 1, 1)::TEXT, 4, '0'
+                        )
+                      ) AS new_cart_id
+                      FROM carts 
+                      WHERE cart_id LIKE CONCAT(TO_CHAR(NOW(), 'YYYYMMDD'), '-%');
+`;
     const resultGen = await db.query(queryGenId);
-    console.log(`resultGen=${resultGen.rows[0].concat}`);
-
-    if (req.body.cart_id == null) {
+    if (resultGen.rows.length > 0) {
+      console.log(`resultGen=${resultGen.rows[0].new_cart_id}`);
+    } else {
+      console.log("No results found");
     }
+    const queryCheckCartId = `SELECT "cart_id" FROM carts WHERE "cart_id" = $1`;
+    const resultCheckCartId = await db.query(queryCheckCartId, [
+      resultGen.rows[0].new_cart_id,
+    ]);
+
+    if (resultCheckCartId.rows.length > 0) {
+      return res.status(400).json({
+        cartOK: false,
+        messageAddCart: "Cart ID already exists",
+      });
+    }
+
     // ได้ id แล้ว ทำการบันทึกข้อมูลลงตะกร้า
     const result = await db.query(
       `INSERT INTO carts ("id","cart_id", "userId", "create_date") VALUES (nextval('cart_id_seq'),$1,$2,$3) `,
       [
-        resultGen.rows[0].concat, //$1 รหัสที่ Gen มา
+        resultGen.rows[0].new_cart_id, //$1 รหัสที่ Gen มา
         decoded.userId, //$2 รหัสที่ส่งมาจาก Frontend
         now, //$3 วันปัจจุบัน
       ]
     );
-
-    return res.json({ cartOK: true, cartId: resultGen.rows[0].concat });
+    // console.log(`result=${result}`);
+    return res.json({ cartOK: true, cartId: resultGen.rows[0].new_cart_id });
   } catch (err) {
     return res.json({ cartOK: false, messageAddCart: err.message });
   }
@@ -184,12 +204,12 @@ export async function getCartByCus(req, res) {
     }
 
     const secret_key = process.env.SECRET_KEY;
-    console.log(secret_key);
+    // console.log(secret_key);
     let decoded;
     try {
-      console.log(`decoded`);
+      // console.log(`decoded`);
       decoded = jwt.verify(token, secret_key);
-      console.log(decoded);
+      // console.log(decoded);
     } catch (err) {
       return res.status(401).json({
         error: "Unauthorized - Invalid token",
@@ -279,7 +299,7 @@ export async function getCartByCus(req, res) {
 }
 
 export async function getCartHistoryByCus(req, res) {
-  console.log(`POST Cart By Customer is Requested`);
+  console.log(`POST CartHistory By Customer is Requested`);
   try {
     const authHeader = req.headers["authorization"];
     const token = authHeader.split(" ")[1];
@@ -309,11 +329,10 @@ export async function getCartHistoryByCus(req, res) {
     }
 
     const userData = resultUser.rows[0];
-
     // ดึงข้อมูลตะกร้าสินค้าที่ยังไม่สมบูรณ์
     const queryListCart = `SELECT ct."cart_id" 
                            FROM carts ct 
-                           WHERE ct."userId" = $1 AND ct."is_succ" == true 
+                           WHERE ct."userId" = $1 AND ct."is_succ" = true 
                            ORDER BY ct."id" DESC`;
     const resultCart = await db.query(queryListCart, [decoded.userId]);
 
@@ -322,7 +341,7 @@ export async function getCartHistoryByCus(req, res) {
     // สำหรับแต่ละตะกร้า
     for (const cart of resultCart.rows) {
       const cartId = cart.cart_id;
-
+      console.log(`cartId=${cartId}`);
       // ดึงข้อมูลสรุปตะกร้า
       const queryCartSum = `SELECT SUM(ctd."quantity") AS qty, 
                                    SUM(ctd."quantity" * pd."product_price") AS money
@@ -331,7 +350,7 @@ export async function getCartHistoryByCus(req, res) {
                             WHERE ctd."cart_id" = $1
                             GROUP BY ctd."cart_id"`;
       const resultCartSum = await db.query(queryCartSum, [cartId]);
-
+      console.log(`resultCartSum=${resultCartSum.rows}`);
       // ดึงข้อมูลสินค้าในตะกร้า
       const queryCartItems = `SELECT ctd."product_id", 
                                      pd."product_name", 
@@ -342,6 +361,7 @@ export async function getCartHistoryByCus(req, res) {
                               LEFT JOIN "products" pd ON ctd."product_id" = pd."product_id"
                               WHERE ctd."cart_id" = $1`;
       const resultCartItems = await db.query(queryCartItems, [cartId]);
+      console.log(`resultCartItems=${resultCartItems.rows}`);
 
       const productList = {};
       resultCartItems.rows.forEach((item) => {
@@ -360,7 +380,7 @@ export async function getCartHistoryByCus(req, res) {
         productList: productList,
       };
     }
-
+    console.log(`cartList=${cartList}`);
     // ส่งผลลัพธ์กลับ
     return res.json({
       status: 200,
