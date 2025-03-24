@@ -171,26 +171,6 @@ export async function addCartDtl(req, res) {
   }
 }
 
-export async function getCart(req, res) {
-  console.log(`GET Cart is Requested`);
-  try {
-    const result = await db.query(
-      `  SELECT ct.*, SUM(ctd.qty) AS sqty,SUM(ctd.price*ctd.qty) AS sprice
-                  FROM carts ct LEFT JOIN "cartDtl" ctd ON ct."cartId" = ctd."cartId"
-                  WHERE ct."cartId"=$1
-                  GROUP BY ct."cartId" `,
-      [req.params.id]
-    );
-    console.log(`id=${req.params.id} \n` + result.rows[0]);
-    return res.json(result.rows);
-  } catch (err) {
-    return res.json({
-      error: err.message,
-    });
-  }
-}
-
-
 export async function getCartByCus(req, res) {
   console.log(`POST Cart By Customer is Requested`);
   try {
@@ -329,6 +309,7 @@ export async function getCartHistoryByCus(req, res) {
     }
 
     const userData = resultUser.rows[0];
+    console.log(`userData=${userData}`);
     // ดึงข้อมูลตะกร้าสินค้าที่ยังไม่สมบูรณ์
     const queryListCart = `SELECT ct."cart_id" 
                            FROM carts ct 
