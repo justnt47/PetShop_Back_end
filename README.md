@@ -23,4 +23,10 @@ This works together with the other repository to create the complete **Pet Shop*
 - **Frontend Repository**: [PetShop Frontend](https://github.com/justnt47/PetShop_front_end_project)
 - **Backend Repository**: [PetShop Backend](https://github.com/justnt47/PetShop_Back_end)
 
+## Database ER Diagram
+
+Below is the Entity-Relationship (ER) diagram for the database used in this project:
+
+![ER Diagram](./assets/er-diagram.png)
+
 This project is for academic purposes only and is not intended for commercial use.
